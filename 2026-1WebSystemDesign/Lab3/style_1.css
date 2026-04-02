@@ -146,6 +146,7 @@ form input[type="text"],
   flex-wrap: nowrap;
   margin-bottom: 10px;
   gap: 15px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 #post article header {
   height: auto;
@@ -191,6 +192,7 @@ form input[type="text"],
   align-items: flex-start;
   justify-content: center;
   gap: 3px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 #ad article img {
   width: 100%;

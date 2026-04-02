@@ -1,0 +1,218 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  width: 80%;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  display: flex;
+}
+li {
+  list-style: none;
+}
+a {
+  text-decoration: none;
+}
+header {
+  background-color: rgb(15, 15, 143);
+  padding: 20px;
+  height: 80px;
+  width: 100%;
+  flex-shrink: 0;
+  position: relative;
+}
+#title {
+  color: #fff;
+  position: absolute;
+  left: 30px;
+  top: 20px;
+}
+#title h1 {
+  font-size: 20px;
+  font-weight: bold;
+}
+#title p {
+  margin-top: 10px;
+  font-size: 10px;
+  font-weight: normal;
+}
+#navi {
+  position: absolute;
+  display: flex;
+  bottom: 0px;
+  right: 0;
+}
+#navi > li {
+  font-size: 14px;
+  font-weight: bold;
+  position: relative;
+  width: 100px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#navi > li > a {
+  color: #fff;
+}
+#navi li ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 5;
+  width: 80%;
+  background-color: rgba(15, 15, 143, 0.8);
+  z-index: 1000;
+}
+#navi li ul li a {
+  color: #fff;
+  text-align: center;
+}
+#navi li:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-width: 1px;
+}
+#navi li:hover ul {
+  display: block;
+}
+#navi li ul li {
+  padding: 5px 0;
+  font-size: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+aside, #login, #post, #ad {
+    margin-top: 0; 
+}
+aside {
+  position: relative;
+}
+#login {
+  order: 1;
+  width: 25%;
+  flex-shrink: 0;
+  background-color: rgb(15, 15, 143);
+  margin-top: 0;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+form label, 
+form input[type="text"], 
+form input[type="password"] {
+    width: 100%;
+    display: block;
+}
+form label {
+  color: #fff;
+  font-weight: normal;
+  font-size: 12px;
+}
+form input[type="text"],
+#login input[type="password"] {
+  margin-bottom: 10px;
+}
+#login input[type="submit"],
+#login input[type="button"] {
+  width: 48%;
+  margin-bottom: 0;
+  padding: 5px 0;
+}
+#post {
+  min-width: 0;
+  flex: 1;
+  order: 2;
+  margin:0;
+}
+#post article {
+  border: 1px solid black;
+  border-radius: 10px;
+  background-color: #ffffff;
+  padding: 5px;
+  font-size: 10px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  margin-bottom: 10px;
+  gap: 15px;
+}
+#post article header {
+  height: auto;
+  width: auto;
+  position: static;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #fff;
+  padding: 5px;
+  margin: 0;
+}
+.card-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+#post article img {
+  height: auto;
+  width: 150px;
+  margin-right: 10px;
+}
+#ad {
+  order: 3;
+  width: 20%;
+  flex-shrink: 0;
+  margin: 0;
+}
+#ad article {
+  border-width: 1px;
+  border-color: black;
+  border-style: solid;
+  border-radius: 10px;
+  background-color: #fcfbea;
+  width: 100%;
+  height: auto;
+  padding: 5px;
+  font-size: 10px;
+  display: flex;
+  margin-bottom: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+#ad article img {
+  width: 100%;
+}
+footer {
+  flex-shrink: 0;
+  order: 4;
+  width: 100%;
+  height: 50px;
+  background-color: rgb(15, 15, 143);
+  color: #fff;
+  padding: 20px;
+}
+#foot ul {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 90px;
+}
+#foot li a {
+  color: #fff;
+  font-size: 12px;
+  font-weight: bold;
+}

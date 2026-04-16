@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 가격이 5000 이상인 상품들의 20% 할인된 가격의 총 합
+        const products = [
+            {name: 'Pen', price: 1000},
+            {name: 'Book', price: 12000},
+            {name: 'Bag', price: 20000},
+            {name: 'Laptop', price: 2000000},
+        ];
+
+        const result = products
+        .filter(item => item.price >= 5000)
+        .map(item => item.price * 0.8)
+        .reduce((sum, price) => sum + price, 0);
+
+        console.log(result);
+
+    </script>
+</body>
+</html>

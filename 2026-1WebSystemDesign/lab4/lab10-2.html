@@ -87,18 +87,75 @@
         const addBtn = document.querySelector('#addBtn');
         const list = document.querySelector('#bookmarkList');
 
-        // 데이터 모델: [{ id, name, url, starred }, ...]
         let bookmarks = [];
+        const saved = localStorage.getItem('bookmarks');
 
-        // TODO 1: 페이지 로드 시 localStorage에서 bookmarks 배열 복원 + 렌더링
-        //         힌트: JSON.parse, render() 호출
+        if (saved) {
+            // AI 활용
+            bookmarks = JSON.parse(saved);
+            render();
+        }
 
-        // TODO 2: render() — bookmarks 배열을 화면에 그리기
-        //         힌트: list.innerHTML = bookmarks.map(b => `<li data-id="${b.id}">...</li>`).join('')
+        
+        function render() {
+            // AI 활용
+            list.innerHTML = bookmarks.map(b => `
+                <li data-id="${b.id}">
+                    <span class="star ${b.starred ? 'active' : ''}">★</span>
+                    <span class="name">${b.name}</span>
+                    <button class="delete-btn">삭제</button>
+                </li>
+            `).join('');
+        }
 
-        // TODO 3: 추가 버튼 — 이름+URL 받아서 bookmarks에 추가 + 저장 + 렌더링
+        addBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const url = urlInput.value.trim();
 
-        // TODO 4: 이벤트 위임 — list에 click 1개로 별표 토글 / 삭제 / 사이트명 클릭 시 window.open
+            if (!name || !url) {
+                return;
+            }
+
+            const newBookmark = {
+                id: Date.now(),
+                name: name,
+                url: url,
+                starred: false
+            };
+
+            bookmarks.push(newBookmark);
+            save();
+            render();
+
+            nameInput.value = '';
+            urlInput.value = '';
+        });
+
+        function save() {
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+        }
+
+        list.addEventListener('click', (e) => {
+            const li = e.target.closest('li');
+            if (!li) return;
+
+            const id = Number(li.dataset.id);
+
+            if (e.target.classList.contains('delete-btn')) {
+                bookmarks = bookmarks.filter(b => b.id !== id);
+            }
+            else if (e.target.classList.contains('star')) {
+                const target = bookmarks.find(b => b.id === id);
+                target.starred = !target.starred;
+            }
+            else if (e.target.classList.contains('name')) {
+                const target = bookmarks.find(b => b.id === id);
+                window.open(target.url, '_blank');
+            }
+
+            save();
+            render();
+        });
     </script>
 </body>
 

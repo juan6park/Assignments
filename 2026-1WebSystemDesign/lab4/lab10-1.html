@@ -48,7 +48,7 @@
             updateCounts(saveMemo);
         }
 
-        // AI 참조
+        // AI 참조, 검토 완료
         textarea.addEventListener('input', (e) => {
             const text = e.target.value;
             localStorage.setItem('memo', text);
@@ -57,11 +57,11 @@
   
         function updateCounts(text) {
             charEl.textContent = text.length;
-            // AI 활용
+            // AI 활용, 검토 완료
             const words = text.trim().split(/\s+/).filter(w => w !== '');
             wordEl.textContent = words.length;
 
-            // 직접 작성
+            // 도전 과제 - 직접 작성
             if (text.length >= 200) {
                 document.querySelector('.count').style.color = 'red';
             }
@@ -73,7 +73,7 @@
         
         const clear = document.querySelector('#clear');
 
-        // AI 활용
+        // AI 활용, 검토 완료
         clear.addEventListener('click', () => {
             textarea.value = '';
             localStorage.removeItem('memo');

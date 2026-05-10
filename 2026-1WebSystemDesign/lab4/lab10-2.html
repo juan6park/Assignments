@@ -91,15 +91,18 @@
         const saved = localStorage.getItem('bookmarks');
 
         if (saved) {
-            // AI 활용
+            // AI 활용, 검토 완료
             bookmarks = JSON.parse(saved);
             render();
         }
 
         
         function render() {
-            // AI 활용
-            list.innerHTML = bookmarks.map(b => `
+            // 추가기능 - AI 활용, 검토 완료
+            const sortedBookmarks = [...bookmarks].sort((a, b) => b.starred - a.starred);
+
+            // AI 활용, 검토 완료
+            list.innerHTML = sortedBookmarks.map(b => `
                 <li data-id="${b.id}">
                     <span class="star ${b.starred ? 'active' : ''}">★</span>
                     <span class="name">${b.name}</span>
@@ -109,11 +112,16 @@
         }
 
         addBtn.addEventListener('click', () => {
+            // AI 참조, 검토 완료
             const name = nameInput.value.trim();
             const url = urlInput.value.trim();
 
             if (!name || !url) {
                 return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
             }
 
             const newBookmark = {
@@ -131,10 +139,13 @@
             urlInput.value = '';
         });
 
+        
+        // AI 활용, 검토 완료
         function save() {
             localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
         }
 
+        // AI 활용, 검토 완료
         list.addEventListener('click', (e) => {
             const li = e.target.closest('li');
             if (!li) return;

@@ -1,0 +1,353 @@
+
+<style>
+*{box-sizing:border-box}
+canvas{display:block;cursor:default}
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 0 6px;flex-wrap:wrap}
+.mode-btn{padding:5px 16px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;font-size:12px;color:var(--color-text-secondary);transition:all .18s}
+.mode-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.layer-btn{padding:4px 12px;border-radius:14px;border:0.5px solid var(--color-border-tertiary);background:transparent;cursor:pointer;font-size:11px;color:var(--color-text-tertiary);transition:all .18s}
+.layer-btn.on{border-color:var(--color-border-secondary);color:var(--color-text-secondary);background:var(--color-background-secondary)}
+.sep{width:1px;height:18px;background:var(--color-border-tertiary);margin:0 2px}
+.infobar{font-size:11px;color:var(--color-text-tertiary);min-height:16px;padding:2px 0 4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:4px 0 6px}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--color-text-secondary)}
+.legdot{width:8px;height:8px;border-radius:50%}
+.tt{position:absolute;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:10px;padding:10px 12px;font-size:12px;pointer-events:none;display:none;min-width:160px;max-width:200px}
+.tt.show{display:block}
+.tt-name{font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.tt-meta{color:var(--color-text-secondary);font-size:11px;margin-bottom:6px}
+.tt-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;margin:0 2px 4px 0}
+.tt-btn{display:block;width:100%;padding:5px 8px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:transparent;cursor:pointer;font-size:11px;color:var(--color-text-secondary);text-align:left;pointer-events:all;margin-top:4px}
+.tt-btn:hover{background:var(--color-background-secondary)}
+.tt-btn.done{color:var(--color-text-success);border-color:var(--color-border-success)}
+</style>
+
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden">Taste Radar — 벤다이어그램 장르 클러스터 그래프</h2>
+
+<div class="topbar">
+  <button class="mode-btn active" id="btn-add" onclick="setMode('add')">추가 모드</button>
+  <button class="mode-btn" id="btn-view" onclick="setMode('view')">뷰 모드</button>
+  <div class="sep"></div>
+  <button class="layer-btn on" id="lbtn-artist" onclick="toggleLayer('artist')">아티스트</button>
+  <button class="layer-btn on" id="lbtn-track" onclick="toggleLayer('track')">트랙</button>
+</div>
+
+<div style="position:relative">
+  <canvas id="c" width="680" height="460"></canvas>
+  <div class="tt" id="tt">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-meta" id="tt-meta"></div>
+    <div id="tt-badges"></div>
+    <button class="tt-btn" id="tt-btn" onclick="ttAction()"></button>
+  </div>
+</div>
+
+<div class="infobar" id="info"></div>
+<div class="legend" id="legend"></div>
+
+<script>
+const W=680,H=460;
+const dark=matchMedia('(prefers-color-scheme:dark)').matches;
+const textCol=dark?'#b8b6ac':'#3d3d3a';
+const mutedCol=dark?'rgba(184,182,172,0.4)':'rgba(61,61,58,0.3)';
+
+function hex2rgb(h){return{r:parseInt(h.slice(1,3),16),g:parseInt(h.slice(3,5),16),b:parseInt(h.slice(5,7),16)}}
+function rgba(hex,a){const{r,g,b}=hex2rgb(hex);return`rgba(${r},${g},${b},${a})`}
+
+const GENRES=[
+  {id:'g0',name:'Electronic', color:'#534AB7', cx:175, cy:160, baseR:72},
+  {id:'g1',name:'Jazz',       color:'#0F6E56', cx:430, cy:100, baseR:68},
+  {id:'g2',name:'Hip-hop',    color:'#993C1D', cx:565, cy:280, baseR:62},
+  {id:'g3',name:'Indie Rock', color:'#993556', cx:295, cy:345, baseR:65},
+  {id:'g4',name:'R&B / Soul', color:'#185FA5', cx:115, cy:345, baseR:60},
+  {id:'g5',name:'Ambient',    color:'#3B6D11', cx:340, cy:200, baseR:58},
+];
+
+const ARTISTS=[
+  {id:'a0', name:'Aphex Twin',       gids:['g0'],       x:130, y:125, added:true,  tracks:['t0','t1']},
+  {id:'a1', name:'Four Tet',         gids:['g0','g5'],  x:230, y:175, added:true,  tracks:['t2','t3']},
+  {id:'a2', name:'Floating Points',  gids:['g0','g1'],  x:285, y:130, added:false, tracks:['t4']},
+  {id:'a3', name:'Caribou',          gids:['g5','g3'],  x:320, y:275, added:false, tracks:['t5']},
+  {id:'a4', name:'Miles Davis',      gids:['g1'],       x:400, y:90,  added:true,  tracks:['t6','t7']},
+  {id:'a5', name:'John Coltrane',    gids:['g1'],       x:460, y:125, added:true,  tracks:['t8']},
+  {id:'a6', name:'Herbie Hancock',   gids:['g1','g4'],  x:270, y:310, added:false, tracks:['t9']},
+  {id:'a7', name:'Kendrick Lamar',   gids:['g2'],       x:545, y:255, added:true,  tracks:['t10','t11']},
+  {id:'a8', name:'J Dilla',          gids:['g2','g4'],  x:360, y:390, added:false, tracks:['t12']},
+  {id:'a9', name:'Radiohead',        gids:['g3'],       x:265, y:340, added:true,  tracks:['t13','t14']},
+  {id:'a10',name:'Arcade Fire',      gids:['g3'],       x:330, y:370, added:false, tracks:['t15']},
+  {id:'a11',name:'Frank Ocean',      gids:['g4','g2'],  x:460, y:360, added:true,  tracks:['t16','t17']},
+  {id:'a12',name:'Brian Eno',        gids:['g5','g0'],  x:195, y:215, added:false, tracks:['t18']},
+  {id:'a13',name:'BOC',              gids:['g5'],       x:370, y:225, added:true,  tracks:['t19']},
+];
+
+const ALINKS=[
+  ['a0','a1'],['a0','a2'],['a1','a2'],['a1','a12'],['a1','a3'],
+  ['a4','a5'],['a4','a6'],['a5','a6'],['a4','a2'],
+  ['a7','a8'],['a7','a11'],
+  ['a9','a10'],['a3','a9'],
+  ['a12','a13'],['a12','a0'],
+  ['a6','a11'],['a8','a11'],
+];
+
+const TRACKS=[
+  {id:'t0', name:'Windowlicker',       aid:'a0', added:true},
+  {id:'t1', name:'Come to Daddy',      aid:'a0', added:false},
+  {id:'t2', name:'Kilo',               aid:'a1', added:true},
+  {id:'t3', name:'Baby',               aid:'a1', added:false},
+  {id:'t4', name:'LesAlpx',            aid:'a2', added:false},
+  {id:'t5', name:"Can't Do Without",   aid:'a3', added:false},
+  {id:'t6', name:'So What',            aid:'a4', added:true},
+  {id:'t7', name:'Blue in Green',      aid:'a4', added:false},
+  {id:'t8', name:'A Love Supreme',     aid:'a5', added:true},
+  {id:'t9', name:'Chameleon',          aid:'a6', added:false},
+  {id:'t10',name:'HUMBLE.',            aid:'a7', added:true},
+  {id:'t11',name:'DNA.',               aid:'a7', added:false},
+  {id:'t12',name:'Donuts (intro)',      aid:'a8', added:false},
+  {id:'t13',name:'Karma Police',       aid:'a9', added:true},
+  {id:'t14',name:'Exit Music',         aid:'a9', added:false},
+  {id:'t15',name:'Wake Up',            aid:'a10',added:false},
+  {id:'t16',name:'Nights',             aid:'a11',added:true},
+  {id:'t17',name:'Self Control',       aid:'a11',added:false},
+  {id:'t18',name:'Music For Airports', aid:'a12',added:false},
+  {id:'t19',name:'Roygbiv',            aid:'a13',added:true},
+];
+
+TRACKS.forEach(t=>{
+  const ar=ARTISTS.find(a=>a.id===t.aid);
+  if(!ar)return;
+  const idx=TRACKS.filter(x=>x.aid===t.aid).indexOf(t);
+  const n=TRACKS.filter(x=>x.aid===t.aid).length;
+  const angle=(Math.PI*2/n)*idx - Math.PI/2;
+  t.x=ar.x+Math.cos(angle)*26;
+  t.y=ar.y+Math.sin(angle)*26;
+});
+
+let mode='add';
+const layers={artist:true,track:true};
+let hovId=null, ttCurrent=null;
+
+function getGenre(id){return GENRES.find(g=>g.id===id)}
+function getArtist(id){return ARTISTS.find(a=>a.id===id)}
+
+function genreRadius(gid){
+  const added=ARTISTS.filter(a=>a.gids.includes(gid)&&a.added).length;
+  const total=ARTISTS.filter(a=>a.gids.includes(gid)).length;
+  const g=getGenre(gid);
+  const base=g.baseR;
+  return base + added*7 + (mode==='add'?total*2:0);
+}
+
+function drawSoftCircle(cx,cy,r,hexColor,alpha){
+  const layers_n=5;
+  for(let i=layers_n;i>=0;i--){
+    const t=i/layers_n;
+    const cr=r*(0.6+0.4*t);
+    const ca=alpha*(1-t*0.82);
+    const ctx2=ctx;
+    ctx2.beginPath();
+    ctx2.arc(cx,cy,cr,0,Math.PI*2);
+    ctx2.fillStyle=rgba(hexColor,ca*0.18);
+    ctx2.fill();
+  }
+  for(let i=8;i>=0;i--){
+    const t=i/8;
+    const strokeR=r*(0.85+0.18*t);
+    const sa=alpha*(1-t)*(0.22);
+    ctx.beginPath();
+    ctx.arc(cx,cy,strokeR,0,Math.PI*2);
+    ctx.strokeStyle=rgba(hexColor,sa);
+    ctx.lineWidth=2.5-t*1.5;
+    ctx.stroke();
+  }
+}
+
+const cv=document.getElementById('c');
+const ctx=cv.getContext('2d');
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  GENRES.forEach(g=>{
+    const r=genreRadius(g.id);
+    drawSoftCircle(g.cx,g.cy,r,g.color,1);
+    ctx.font='500 9px sans-serif';
+    ctx.fillStyle=rgba(g.color,0.55);
+    ctx.textAlign='center';
+    ctx.fillText(g.name.toUpperCase(),g.cx,g.cy-r-8);
+    ctx.textAlign='left';
+  });
+
+  if(layers.artist){
+    ALINKS.forEach(([a1id,a2id])=>{
+      const a1=ARTISTS.find(a=>a.id===a1id),a2=ARTISTS.find(a=>a.id===a2id);
+      if(!a1||!a2)return;
+      if(mode==='view'&&(!a1.added||!a2.added))return;
+      const both=a1.added&&a2.added;
+      const gc=getGenre(a1.gids[0]);
+      ctx.beginPath();ctx.moveTo(a1.x,a1.y);ctx.lineTo(a2.x,a2.y);
+      ctx.strokeStyle=rgba(gc.color,both?0.28:0.1);
+      ctx.lineWidth=both?0.8:0.4;
+      ctx.setLineDash(both?[]:[3,4]);
+      ctx.stroke();ctx.setLineDash([]);
+    });
+  }
+
+  if(layers.track){
+    TRACKS.forEach(t=>{
+      const ar=getArtist(t.aid);if(!ar)return;
+      if(mode==='view'&&(!ar.added||!t.added))return;
+      const gc=getGenre(ar.gids[0]);
+      const vis=ar.added&&t.added;
+      ctx.beginPath();ctx.moveTo(ar.x,ar.y);ctx.lineTo(t.x,t.y);
+      ctx.strokeStyle=rgba(gc.color,vis?0.22:0.09);
+      ctx.lineWidth=vis?0.7:0.35;
+      ctx.setLineDash(vis?[]:[2,3]);
+      ctx.stroke();ctx.setLineDash([]);
+    });
+
+    const visT=mode==='view'?TRACKS.filter(t=>{const ar=getArtist(t.aid);return ar&&ar.added&&t.added}):TRACKS;
+    visT.forEach(t=>{
+      const ar=getArtist(t.aid);if(!ar)return;
+      const gc=getGenre(ar.gids[0]);
+      const isHov=hovId===t.id;
+      const vis=ar.added&&t.added;
+      const r=vis?3.5:2.5;
+      if(isHov){ctx.beginPath();ctx.arc(t.x,t.y,r+4,0,Math.PI*2);ctx.fillStyle=rgba(gc.color,0.18);ctx.fill();}
+      ctx.beginPath();ctx.arc(t.x,t.y,r,0,Math.PI*2);
+      ctx.fillStyle=rgba(gc.color,vis?0.8:0.28);ctx.fill();
+      if(vis){ctx.strokeStyle=dark?rgba(gc.color,0.45):'rgba(255,255,255,0.75)';ctx.lineWidth=1;ctx.stroke();}
+      else if(mode==='add'){ctx.beginPath();ctx.arc(t.x,t.y,r+3,0,Math.PI*2);ctx.strokeStyle=rgba(gc.color,0.18);ctx.lineWidth=0.6;ctx.stroke();}
+      if(isHov||vis){
+        ctx.font=`${vis?'500':'400'} ${vis?10:9}px sans-serif`;
+        ctx.fillStyle=vis?textCol:mutedCol;
+        ctx.fillText(t.name,t.x+r+4,t.y+4);
+      }
+    });
+  }
+
+  if(layers.artist){
+    const visA=mode==='view'?ARTISTS.filter(a=>a.added):ARTISTS;
+    visA.forEach(ar=>{
+      const gc=getGenre(ar.gids[0]);
+      const isHov=hovId===ar.id;
+      const r=ar.added?7:5;
+      const multiGenre=ar.gids.length>1;
+      if(isHov){ctx.beginPath();ctx.arc(ar.x,ar.y,r+6,0,Math.PI*2);ctx.fillStyle=rgba(gc.color,0.16);ctx.fill();}
+      ctx.beginPath();ctx.arc(ar.x,ar.y,r,0,Math.PI*2);
+      if(ar.added){
+        ctx.fillStyle=gc.color;ctx.fill();
+        if(multiGenre){
+          const gc2=getGenre(ar.gids[1]);
+          ctx.beginPath();
+          ctx.arc(ar.x,ar.y,r+3.5,0,Math.PI*2);
+          ctx.strokeStyle=rgba(gc2.color,0.55);
+          ctx.lineWidth=1.5;ctx.setLineDash([2,2]);ctx.stroke();ctx.setLineDash([]);
+        }
+        ctx.strokeStyle=dark?rgba(gc.color,0.45):'rgba(255,255,255,0.8)';ctx.lineWidth=1.5;ctx.stroke();
+      } else {
+        ctx.fillStyle=rgba(gc.color,0.32);ctx.fill();
+        if(mode==='add'){ctx.beginPath();ctx.arc(ar.x,ar.y,r+4,0,Math.PI*2);ctx.strokeStyle=rgba(gc.color,0.18);ctx.lineWidth=0.7;ctx.stroke();}
+      }
+      if(ar.added||isHov){
+        ctx.font=`${ar.added?'500':'400'} ${ar.added?11:10}px sans-serif`;
+        ctx.fillStyle=ar.added?textCol:mutedCol;
+        ctx.fillText(ar.name,ar.x+r+5,ar.y+4);
+      }
+    });
+  }
+}
+
+function hitTest(mx,my){
+  if(layers.artist){
+    for(const ar of ARTISTS){
+      if(mode==='view'&&!ar.added)continue;
+      const dx=mx-ar.x,dy=my-ar.y;
+      if(dx*dx+dy*dy<15*15)return{type:'artist',node:ar};
+    }
+  }
+  if(layers.track){
+    for(const t of TRACKS){
+      const ar=getArtist(t.aid);if(!ar)continue;
+      if(mode==='view'&&(!ar.added||!t.added))continue;
+      const dx=mx-t.x,dy=my-t.y;
+      if(dx*dx+dy*dy<9*9)return{type:'track',node:t};
+    }
+  }
+  return null;
+}
+
+const tt=document.getElementById('tt');
+cv.addEventListener('mousemove',e=>{
+  const rect=cv.getBoundingClientRect();
+  const scale=W/rect.width;
+  const mx=(e.clientX-rect.left)*scale;
+  const my=(e.clientY-rect.top)*scale;
+  const hit=hitTest(mx,my);
+  hovId=hit?hit.node.id:null;
+  cv.style.cursor=hit?'pointer':'default';
+  if(hit){
+    const ds=rect.width/W;
+    const px=hit.node.x*ds+10;
+    const py=hit.node.y*ds-10;
+    ttCurrent=hit;
+    if(hit.type==='artist'){
+      const ar=hit.node;
+      document.getElementById('tt-name').textContent=ar.name;
+      document.getElementById('tt-meta').textContent='아티스트';
+      document.getElementById('tt-badges').innerHTML=ar.gids.map(gid=>{
+        const g=getGenre(gid);
+        return`<span class="tt-badge" style="background:${rgba(g.color,0.13)};color:${g.color}">${g.name}</span>`;
+      }).join('');
+      const btn=document.getElementById('tt-btn');
+      btn.textContent=ar.added?'이미 추가됨':'+ 아티스트 추가';
+      btn.className='tt-btn'+(ar.added?' done':'');
+      btn.style.display=mode==='add'?'block':'none';
+    } else {
+      const t=hit.node;const ar=getArtist(t.aid);
+      document.getElementById('tt-name').textContent=t.name;
+      document.getElementById('tt-meta').textContent=`트랙 · ${ar.name}`;
+      document.getElementById('tt-badges').innerHTML=ar.gids.map(gid=>{
+        const g=getGenre(gid);
+        return`<span class="tt-badge" style="background:${rgba(g.color,0.13)};color:${g.color}">${g.name}</span>`;
+      }).join('');
+      const btn=document.getElementById('tt-btn');
+      btn.textContent=t.added?'이미 추가됨':'+ 트랙 추가';
+      btn.className='tt-btn'+(t.added?' done':'');
+      btn.style.display=mode==='add'?'block':'none';
+    }
+    tt.style.left=Math.min(px,rect.width-210)+'px';
+    tt.style.top=Math.max(py-120,0)+'px';
+    tt.classList.add('show');
+  } else {
+    tt.classList.remove('show');ttCurrent=null;
+  }
+  document.getElementById('info').textContent=hit?(mode==='add'?(hit.node.added?'추가됨':'클릭하여 추가'):''):'';
+  draw();
+});
+
+cv.addEventListener('mouseleave',()=>{hovId=null;tt.classList.remove('show');ttCurrent=null;draw();});
+
+function ttAction(){
+  if(!ttCurrent||mode!=='add')return;
+  ttCurrent.node.added=true;
+  document.getElementById('tt-btn').textContent='이미 추가됨';
+  document.getElementById('tt-btn').className='tt-btn done';
+  document.getElementById('info').textContent=`${ttCurrent.node.name} 추가됨`;
+  draw();
+}
+
+function setMode(m){
+  mode=m;tt.classList.remove('show');ttCurrent=null;
+  document.getElementById('btn-add').classList.toggle('active',m==='add');
+  document.getElementById('btn-view').classList.toggle('active',m==='view');
+  draw();
+}
+function toggleLayer(l){
+  layers[l]=!layers[l];
+  document.getElementById('lbtn-'+l).classList.toggle('on',layers[l]);
+  draw();
+}
+
+document.getElementById('legend').innerHTML=GENRES.map(g=>`<div class="leg"><span class="legdot" style="background:${g.color}"></span><span>${g.name}</span></div>`).join('');
+draw();
+</script>
